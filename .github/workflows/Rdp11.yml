@@ -1,0 +1,36 @@
+name: 72h Free RDP
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [rdp_trigger]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Enable RDP
+        run: |
+          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString "rdpyaduv" -AsPlainText -Force)
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+
+      - name: Show IP Address
+        run: ipconfig
+
+      - name: Keep Alive for 6h
+        shell: cmd
+        run: |
+          :loop
+          echo RDP alive %time%
+          timeout /t 60 >nul
+          goto loop
+
+      - name: Trigger Next Session
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN" }
+          $body = @{ event_type = "rdp_trigger" } | ConvertTo-Json
+          Invoke-RestMethod -Method POST -Uri "https://api.github.com/repos/${{ github.repository }}/dispatches" -Headers $headers -Body $body
