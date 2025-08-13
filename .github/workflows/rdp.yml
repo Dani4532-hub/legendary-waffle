@@ -1,0 +1,16 @@
+name: Free RDP
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Enable RDP
+        run: |
+          Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString "Torn_4398!?" -AsPlainText -Force)
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -name "fDenyTSConnections" -Value 0
+      - name: Keep Alive
+        run: |
+          while ($true) { Start-Sleep -Seconds 60 }
